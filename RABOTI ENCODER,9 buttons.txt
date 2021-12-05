@@ -1,0 +1,177 @@
+#include <ClickButton.h>
+#include <HID-Project.h>
+#include <Encoder.h>
+uint8_t buf[8] = { 0 };
+
+int accel = 4;
+int mode = 0;
+int buttonPin = 4;
+const int pinHome  = 5;
+const int pinBack  = 6;
+const int pinF1  = 7;
+const int pinF2  = 8;
+const int pinF3  = 9;
+const int pinLArrow  = 10;
+const int pinUpArrow  = 16;
+const int pinDownArrow  = 14;
+const int pinRArrow  = 15;
+
+ClickButton button(buttonPin, LOW, CLICKBTN_PULLUP);
+
+unsigned long previousMillis = 0;
+const long interval = 700;
+int blueLed = A3;
+int redLed = A2;
+
+Encoder myEnc(3, 2);
+
+long oldPosition  = -999;
+
+int maxVal = 50;
+int fadeTime = 2; //ms
+
+void setup() {
+  button.debounceTime = 60;
+  button.longClickTime  = 700;
+  
+  pinMode(blueLed, OUTPUT);
+  pinMode(redLed, OUTPUT);
+  pinMode(pinHome, INPUT_PULLUP);
+  pinMode(pinBack, INPUT_PULLUP);
+  pinMode(pinF1, INPUT_PULLUP);
+  pinMode(pinF2, INPUT_PULLUP);
+  pinMode(pinF3, INPUT_PULLUP);
+  pinMode(pinLArrow, INPUT_PULLUP);
+  pinMode(pinUpArrow, INPUT_PULLUP);
+  pinMode(pinDownArrow, INPUT_PULLUP);
+  pinMode(pinRArrow, INPUT_PULLUP);
+  digitalWrite(redLed, maxVal);
+  Consumer.begin();  
+  Serial.begin(9600);
+}
+
+
+
+void loop() {
+  if (!digitalRead(pinHome)) {
+
+    // See HID Project documentation for more Consumer keys
+    Consumer.write(HID_CONSUMER_AC_HOME);
+    // Simple debounce
+    delay(300);
+  }
+  if (!digitalRead(pinBack)) {
+
+    // See HID Project documentation for more Consumer keys
+    Consumer.write(HID_CONSUMER_AC_BACK);
+    // Simple debounce
+    delay(300);
+  }
+  if (!digitalRead(pinF1)) {
+
+    // See HID Project documentation for more Consumer keys
+    Keyboard.write(KEY_F1);
+    // Simple debounce
+    delay(300);
+  }
+  if (!digitalRead(pinF2)) {
+
+    // See HID Project documentation for more Consumer keys
+    Keyboard.write(KEY_F2);
+    // Simple debounce
+    delay(300);
+  }
+  if (!digitalRead(pinF3)) {
+
+    // See HID Project documentation for more Consumer keys
+    Keyboard.write(KEY_F3);
+    // Simple debounce
+    delay(300);
+  }
+   if (!digitalRead(pinLArrow)) {
+
+    // See HID Project documentation for more Consumer keys
+    Keyboard.write(KEY_LEFT_ARROW);
+    // Simple debounce
+    delay(300);
+  }
+   if (!digitalRead(pinUpArrow)) {
+
+    // See HID Project documentation for more Consumer keys
+    Keyboard.write(KEY_UP_ARROW);
+    // Simple debounce
+    delay(300);
+  }
+   if (!digitalRead(pinDownArrow)) {
+
+    // See HID Project documentation for more Consumer keys
+    Keyboard.write(KEY_DOWN_ARROW);
+    // Simple debounce
+    delay(300);
+  }
+   if (!digitalRead(pinRArrow)) {
+
+    // See HID Project documentation for more Consumer keys
+    Keyboard.write(KEY_RIGHT_ARROW);
+    // Simple debounce
+    delay(300);
+  }
+  long newPosition = myEnc.read() / accel;
+  if (newPosition != oldPosition) {
+    
+    if(newPosition > oldPosition) {
+      if(mode==0) (Keyboard.write(KEY_RIGHT));
+      else if(mode==1) (Consumer.write(MEDIA_NEXT));
+    }
+    
+    if(oldPosition > newPosition) {
+     if(mode==0) (Keyboard.write(KEY_LEFT));
+     else if(mode==1) (Consumer.write(MEDIA_PREVIOUS));
+    }
+    
+    oldPosition = newPosition;
+    
+  }
+  
+  button.Update();
+
+if(button.clicks == 2) {
+   Consumer.write(HID_CONSUMER_AC_HOME); //for Duble Click HOME
+}
+if(button.clicks == 3) {
+   Consumer.write(HID_CONSUMER_AC_BACK); //for Triple Click HOME
+}
+
+  if(button.clicks == 1) {
+    if(mode==0) Keyboard.write(KEY_ENTER);
+    else if(mode==1) (Consumer.write(MEDIA_PLAY_PAUSE));
+  }
+  if(button.clicks == -1) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      if(mode == 0) {
+        for(int fadeVal = maxVal; fadeVal >= 0; fadeVal -= 1) {
+          delay(fadeTime);
+          digitalWrite(redLed, fadeVal);
+          }
+        mode = 1;
+        for(int fadeVal = 0; fadeVal <= maxVal; fadeVal += 1) {
+          delay(fadeTime);
+          digitalWrite(blueLed, fadeVal);
+          }
+      }
+      else {
+        for(int fadeVal = maxVal; fadeVal >= 0; fadeVal -= 1) {
+          delay(fadeTime);
+          digitalWrite(blueLed, fadeVal);
+          }
+        mode = 0;
+        for(int fadeVal = 0; fadeVal <= maxVal; fadeVal += 1) {
+          delay(fadeTime);
+          digitalWrite(redLed, fadeVal);
+          }
+      }
+    }
+  }
+}
